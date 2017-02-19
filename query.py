@@ -10,6 +10,7 @@ def distinct_dates():
     for tweet in Tweet.select(fn.date_trunc('day', Tweet.tweeted_at)).distinct().dicts():
         dates.append(tweet['date_trunc'])
     print "Finished Quarying Dates from DB"
+    print len(dates)
     return dates
 
 
@@ -31,8 +32,8 @@ if __name__ == '__main__':
         count1 = 0 # Counter for number of tweets in the second group
         for score in range(0, 4):
             # Open files to write in per day
-            time_one = open("./data/" + date.strftime('%m-%d-%Y') + "_" + str(score) + ".txt", 'w')
-            time_two = open("./data/" + date.strftime('%m-%d-%Y') + "_" + str(score) + ".txt", 'w')
+            time_one = open("./data/" + date.strftime('%m-%d-%Y') + "_" + str(score) + "_AM.txt", 'w')
+            time_two = open("./data/" + date.strftime('%m-%d-%Y') + "_" + str(score) + "_PM.txt", 'w')
             # Iterate through all the tweets
             for tweet in Tweet.select().join(Score).where((date == fn.date_trunc('day', Tweet.tweeted_at)) & (
                 Score.tid_id == Tweet.tweet_id) & (Score.score_type == 0) & (Score.score_info == score)):
