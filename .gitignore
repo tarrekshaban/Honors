@@ -1,3 +1,5 @@
 *.pyc
-/data
+/data/*
 /.idea
+/t/*
+/v/*
