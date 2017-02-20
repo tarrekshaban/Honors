@@ -23,7 +23,6 @@ def determine_date(twt):
 
 if __name__ == '__main__':
     dates = distinct_dates()
-    print dates
     for date in dates:
         # Loop four times, once per each score "type"
         print "Working on: " + str(date)
