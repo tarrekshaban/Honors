@@ -2,7 +2,6 @@ from model import *
 import datetime
 from peewee import *
 
-
 # Function which returns a list of dates in the DB to use for later quaries
 def distinct_dates():
     dates = []
@@ -10,7 +9,6 @@ def distinct_dates():
     for tweet in Tweet.select(fn.date_trunc('day', Tweet.tweeted_at)).distinct().dicts():
         dates.append(tweet['date_trunc'])
     print "Finished Quarying Dates from DB"
-    print len(dates)
     return dates
 
 
@@ -25,6 +23,7 @@ def determine_date(twt):
 
 if __name__ == '__main__':
     dates = distinct_dates()
+    print dates
     for date in dates:
         # Loop four times, once per each score "type"
         print "Working on: " + str(date)
@@ -36,7 +35,7 @@ if __name__ == '__main__':
             time_two = open("./data/" + date.strftime('%m-%d-%Y') + "_" + str(score) + "_PM.txt", 'w')
             # Iterate through all the tweets
             for tweet in Tweet.select().join(Score).where((date == fn.date_trunc('day', Tweet.tweeted_at)) & (
-                Score.tid_id == Tweet.tweet_id) & (Score.score_type == 0) & (Score.score_info == score)):
+                    Score.tid_id == Tweet.tweet_id) & (Score.score_type == 0) & (Score.score_info == score)):
                 # Process the tweets
                 t = tweet.tweet_text.replace('\n', ' ')
                 t = ' '.join(t.split())
@@ -51,5 +50,4 @@ if __name__ == '__main__':
                     # If 12PM - 12AM
                     time_two.write(t.encode("UTF-8")+"\n")
                     count1 += 1
-        print count0, count1
 print "Compleated"
