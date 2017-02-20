@@ -34,7 +34,8 @@ if __name__ == '__main__':
             time_two = open("./data/" + date.strftime('%m-%d-%Y') + "_" + str(score) + "_PM.txt", 'w')
             # Iterate through all the tweets
             for tweet in Tweet.select().join(Score).where((date == fn.date_trunc('day', Tweet.tweeted_at)) & (
-                    Score.tid_id == Tweet.tweet_id) & (Score.score_type == 0) & (Score.score_info == score)):
+                    Score.tid_id == Tweet.tweet_id) & (Score.score_type == 0) & (Score.score_info == score)) & (
+                        Tweet.language == 'en'):
                 # Process the tweets
                 t = tweet.tweet_text.replace('\n', ' ')
                 t = ' '.join(t.split())
