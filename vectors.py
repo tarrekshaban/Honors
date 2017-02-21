@@ -3,19 +3,6 @@ import word2vec
 import os
 
 
-# Tokenize the give document: doc
-# Ignores tweets that throw a UnicodeEncodeError to not taint the corpus with partially encoded tweets
-def tokenize_doc(doc_fd, new_fd):
-    for line in doc_fd:
-        # Actually tokenize the strings here
-        try:
-            new_fd.write(" ".join(tokenize.word_tokenize(line.decode("ascii", 'ignore')))+"\n")
-        except UnicodeDecodeError:
-            print "UnicodeDecodeError: " + line
-        except UnicodeEncodeError:
-            print "UnicodeEncodeError: " + line
-
-
 def create_word_vector_phrases(vec_doc):
     word2vec.word2phrase(vec_doc, vec_doc[:len(vec_doc)-4]+"_phrases", verbose=True)
 
