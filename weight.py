@@ -1,6 +1,6 @@
 from collections import Counter
-from nltk import tokenize
 from nltk.corpus import stopwords
+from magicutil import files_in_directory
 import os
 import time
 import math
@@ -42,15 +42,12 @@ class Mapper(object):
 
         if word not in self.vocab:
             # word has not been seen before...
-            # if the word is a stop word or another form of prohibited word
-            if not is_allowed(word):
-                return -1
-            # word is not a prohibited word... thus we can add it to our dictionary
             self.vocab[word] = [0 for x in range(0, self.count)]
         f_id = self.lookup_document_id(file_name)
+
+        # Set the word to be present
         if self.vocab[word][f_id] is 0:
             self.vocab[word][f_id] = 1
-        return 0
 
     def number_of_documents(self):
         return float(self.count)
@@ -65,93 +62,45 @@ class Mapper(object):
             counter += f
         return float(counter)
 
+    # Determine the IDF score for the vocab
     def vocab_list_idf(self):
         vocab_list = dict()
         for word, val in self.vocab.iteritems():
             vocab_list[word] = float(math.log((self.number_of_documents()) /
-                                           (float(self.number_of_documents_contain_word(word)))))
+                                              (float(self.number_of_documents_contain_word(word)))))
         return vocab_list
 
 
 # Calculates the TF-IDF score for all files in a directory
 # Each file must have one TWEET per line
-def calculate_tfid(directory, itter_flag=True, clean_files=True, will_tokenize=True):
+def calculate_tfid(directory):
     documents = list()
-    files = os.listdir(directory)
+    files = files_in_directory(directory, short=True)
     mapper = Mapper()
 
     # Adds all files to the mapper
     for f in files:
-        if not f.startswith('.'):
-            mapper.add_document(f)
-
-    if clean_files:
-        for f in files:
-            if not f.startswith('.'):
-                time1 = time.time()
-                f_new = open(directory + "/" + f + "_clean", 'w')
-                count = 0
-                for tweet in open(directory + "/" + f, 'r'):
-                    try:
-                        f_new.write(tweet.decode('utf8').encode('utf8'))
-                    except UnicodeDecodeError:
-                        count += 1
-                        continue
-                    except UnicodeEncodeError:
-                        count += 1
-                        continue
-                print "Convert 1: " + str(time.time() - time1) + "; Count: " + str(count)
+        mapper.add_document(f)
 
     # Goes through each document building Counters and doing other magic
     for f in files:
-        # Avoids reading any of the .DS files on macOS
-        if not f.startswith('.'):
-            s = time.time()
-            print f
-            # Creates a Counter() for documents vocab
-            c = Counter()
+        print f
+        c = Counter()
+        for tweet in open(directory + "/" + f, 'r'):
+            try:
+                tweet = tweet.decode('utf8')
+                c.update([word for word in tweet.split() if is_allowed(word)])
+            except UnicodeDecodeError:
+                continue
 
-            if will_tokenize:
-                # If the user WANTS to tokenize the documents as well as TF-IDF
-                if itter_flag:
-                    # Add the tokenized version of each tweet to the counter
-                    for tweet in open(directory + "/" + f + "_clean", 'r'):
-                        tweet = tweet.lower()  # lowercase the tweet BEFORE tokenizing it
-                        try:
-                            c.update(tokenize.word_tokenize(tweet.decode('utf8')))
-                        except UnicodeDecodeError:
-                            continue
-                else:
-                    try:
-                        c.update(tokenize.word_tokenize(open(directory + "/" + f, 'r').read().decode('utf8').lower()))
-                    except UnicodeDecodeError:
-                        continue
-            else:
-                # If the user ALREADY HAS tokenized documents and is only interested in TF-IDF
-                for tweet in open(directory + "/" + f, 'r'):
-                    try:
-                        tweet = tweet.decode('utf8').lower()
-                        scratch = tweet.split()
-                        c.update(scratch)
-                    except UnicodeDecodeError:
-                        continue
-
-            print "time: " + str(time.time() - s)
-            # Adds all words encountered in the tweets to the mapper
-            stack = []
             num_words = 0
             for key, value in c.iteritems():
-                r = mapper.add_word(key, f)
-                if r == -1:
-                    stack.append(key)
-                else:
-                    num_words += value
-            for key in stack:
-                del c[key]
+                mapper.add_word(key, f)
+                num_words += value
 
             # Add the counter and the label to the documents list
             documents.append((f, num_words, copy.copy(c)))
-
+    print "Made it 3"
     # Build a vocab list of IDF scores
     vocab_list = mapper.vocab_list_idf()
     tfidf_matrix = list()
@@ -163,8 +112,9 @@ def calculate_tfid(directory, itter_flag=True, clean_files=True, will_tokenize=T
         doc_list.sort(key=lambda tup: tup[1], reverse=True)
         tfidf_matrix.append((doc[0], copy.copy(doc_list)))
 
+    print "Made it 4"
     # Save the TFIDF matrix as a pickle file
     pickle.dump(tfidf_matrix, open('./tfidf_score.p', 'wb'))
 
 if __name__ == '__main__':
-    calculate_tfid("/Users/tshaban/Development/honors/data", itter_flag=False, clean_files=True)
+    calculate_tfid("/Users/tshaban/Desktop/tokens")
