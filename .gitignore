@@ -1,6 +1,10 @@
 *.pyc
 /data/*
 /.idea
+<<<<<<< HEAD
 /t/*
 /v/*
 run.py
+=======
+run.py
+>>>>>>> cleanup
