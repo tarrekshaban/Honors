@@ -1,5 +1,4 @@
 *.pyc
 /data/*
 /.idea
-/t/*
-/v/*
+run.py

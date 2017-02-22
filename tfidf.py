@@ -1,4 +1,3 @@
-import time
 import math
 from collections import Counter
 from magicutil import files_in_directory
@@ -46,7 +45,7 @@ class Mapper(object):
 
 
 def is_prohibited(word):
-    s = {'.', ':', '...', ',', "'s", '``', 'RT', '!', '?', '&', "n't", '-', "`", 'https'}
+    s = {'.', ':', '...', ',', "'s", '``', 'RT', '!', '?', '&', "n't", '-', "`", 'https', '--'}
     if word in s:
         return True
     else:
@@ -65,15 +64,18 @@ def calculate_idf(directory, file_path):
 
     # add all words to the mapper per file --------------------------------------
     for f in files:
+        print f
         for line in open(directory + "/" + f, 'r'):
             try:
                 for word in line.decode('utf8').split():
-                    if word not in english_stops and not word.startswith("https://") and not is_prohibited(word):
+                    if word not in english_stops and not word.startswith("https://") and not is_prohibited(word) \
+                            and not word.startswith("@"):
                         mapper.add_word(word, f)
             except UnicodeDecodeError:
                 continue
 
     # calculates idf score for each word --------------------------------------
+    print "started ------"
     for key, value in mapper.vocab.iteritems():
         num = mapper.number_of_documents_contain_word(key)
         calc = mapper.number_of_documents()/num
@@ -82,6 +84,7 @@ def calculate_idf(directory, file_path):
                                                 + "\t" + str(calc) + "\t" + str(math.log(calc)) + "\n")
         except UnicodeEncodeError:
             continue
+    print "finished ------"
 
 
 def calculate_tf_idf(file_path, idf_dict, new_file_path):
@@ -133,21 +136,21 @@ def build_idf_dic(file_path):
     return idf_dict
 
 
-def build_doc_tf_idf_list(file_path):
+def build_doc_tf_idf_list(file_path, threshold=1):
     fd_score = open(file_path, 'r')
     tf_idf_list = list()
 
     for line in fd_score:
         try:
             args = line.decode('utf8').split("\t")
-            tf_idf_list.append((args[0], float(args[4]), float(args[5])))
+            if float(args[2] > threshold):
+                tf_idf_list.append((args[0], float(args[4]), float(args[5])))
         except UnicodeDecodeError:
             continue
 
     tf_idf_list.sort(key=lambda tup: tup[1], reverse=True)
 
-    for w in tf_idf_list[0:20]:
-        print w
+    return tf_idf_list
 
 
 if __name__ == '__main__':
