@@ -2,7 +2,10 @@ import math
 from collections import Counter
 from magicutil import files_in_directory
 from nltk.corpus import stopwords
-
+from multiprocessing import Pool
+from multiprocessing.dummy import Pool as ThreadPool
+from functools import partial
+import os
 
 class Mapper(object):
     def __init__(self):
@@ -87,9 +90,9 @@ def calculate_idf(directory, file_path):
     print "finished ------"
 
 
-def calculate_tf_idf(file_path, idf_dict, new_file_path):
-    fd_file = open(file_path, 'r')
-    new_file = open(new_file_path, 'w')
+def calculate_tf_idf(f, idf_dict, init_dir, target_dir):
+    fd_file = open(init_dir + "/" + f, 'r')
+    new_file = open(target_dir + "/" + f, 'w')
     c = Counter()
 
     # for each tweet in the file, add words to dictionary --------------------------------------
@@ -122,6 +125,28 @@ def calculate_tf_idf(file_path, idf_dict, new_file_path):
     new_file.close()
 
 
+def calculate_tf_idf_directory(initial_dir, target_dir, idf_path, multi_thread=False, num_threads=5):
+    files = files_in_directory(initial_dir, short=True)
+    idf = build_idf_dic(idf_path)
+
+    # if target directory does not exist, make it
+    if not os.path.exists(target_dir):
+        os.makedirs(target_dir)
+
+    # check if the user wanted to do this multi-threaded
+    if multi_thread:
+        map_func = partial(calculate_tf_idf, idf_dict=idf, init_dir=initial_dir, target_dir=target_dir)
+        pool = ThreadPool(num_threads)
+
+        pool.map(map_func, files)
+
+        pool.close()
+        pool.join()
+    else:
+        for f in files:
+            calculate_tf_idf(f, idf, initial_dir, target_dir)
+
+
 def build_idf_dic(file_path):
     fd_idf = open(file_path, 'r')
     idf_dict = dict()
@@ -143,8 +168,8 @@ def build_doc_tf_idf_list(file_path, threshold=1):
     for line in fd_score:
         try:
             args = line.decode('utf8').split("\t")
-            if float(args[2] > threshold):
-                tf_idf_list.append((args[0], float(args[4]), float(args[5])))
+            if float(args[2]) > threshold:
+                tf_idf_list.append((args[0], float(args[4]), float(args[5]), float(args[2])))
         except UnicodeDecodeError:
             continue
 
@@ -153,8 +178,10 @@ def build_doc_tf_idf_list(file_path, threshold=1):
     return tf_idf_list
 
 
-if __name__ == '__main__':
-    calculate_idf("/Users/tshaban/Desktop/data/tokens", "/Users/tshaban/Desktop/data/idf_values.txt")
+def write_tf_idf_as_model(file_path, threshold, model):
+
+
+    # calculate_idf("/Users/tshaban/Desktop/data/tokens", "/Users/tshaban/Desktop/data/idf_values.txt")
     # build_idf_dic("/Users/tshaban/Desktop/tfidf.txt")
     # calculate_tf_idf("/Users/tshaban/Desktop/tokens/10-08-2016_2_PM.txt",
     #                   build_idf_dic("/Users/tshaban/Desktop/tfidf.txt"), "/Users/tshaban/Desktop/tf_idf_score.txt")
